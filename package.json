@@ -1,0 +1,30 @@
+{
+  "name": "Sep-QRattendanceTeam04",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/ThanhTanPM2000/Sep-QRattendanceTeam04.git",
+  "author": "Nguyen Thanh Tan <thanhtanpm2000@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "dependencies": {
+    "@joi/date": "^2.1.0",
+    "compression": "^1.7.4",
+    "config": "^3.3.6",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^5.3.0",
+    "fawn": "^2.1.5",
+    "helmet": "^4.6.0",
+    "joi": "^17.4.0",
+    "joi-objectid": "^3.0.1",
+    "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.21",
+    "mongoose": "^5.12.12",
+    "nodemon": "^2.0.7",
+    "winston": "^3.3.3"
+  }
+}
