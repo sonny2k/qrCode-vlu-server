@@ -235,15 +235,25 @@ router.delete("/:id/:mail", async (req, res) => {
     });
   });
 
-  myClass.averageOfAttendance =
-    myClass.lessons.reduce((reducer, currentValue) => {
-      return reducer + currentValue.averageOfAttendance;
-    }) / myClass.lessons.length;
+  // myClass.sumOfAttendance = myClass.lessons.reduce((reducer, currentValue) => {
+  //   return reducer + currentValue.numOfAttendance;
+  // });
 
-  myClass.averageOfNonAttendance =
-    myClass.lessons.reduce((reducer, currentValue) => {
-      return reducer + currentValue.averageOfNonAttendance;
-    }) / myClass.lessons.length;
+  // myClass.sumOfNonAttendance = myClass.lessons.reduce(
+  //   (reducer, currentValue) => {
+  //     return reducer + currentValue.numOfNonAttendance;
+  //   }
+  // );
+
+  // myClass.averageOfAttendance =
+  //   myClass.lessons.reduce((reducer, currentValue) => {
+  //     return reducer + currentValue.averageOfAttendance;
+  //   }) / myClass.lessons.length;
+
+  // myClass.averageOfNonAttendance =
+  //   myClass.lessons.reduce((reducer, currentValue) => {
+  //     return reducer + currentValue.averageOfNonAttendance;
+  //   }) / myClass.lessons.length;
 
   try {
     const task = new Fawn.Task();
@@ -267,6 +277,32 @@ router.delete("/:id/:mail", async (req, res) => {
           "lessons.$[].students": {
             mail: student.mail,
           },
+        },
+      }
+    );
+    task.update(
+      "classes",
+      { _id: myClass._id },
+      {
+        $set: {
+          sumOfAttendance: myClass.lessons.reduce((reducer, currentValue) => {
+            return reducer + currentValue.numOfAttendance;
+          }, 0),
+          sumOfNonAttendance: myClass.lessons.reduce(
+            (reducer, currentValue) => {
+              return reducer + currentValue.numOfNonAttendance;
+            },
+            0
+          ),
+          averageOfAttendance:
+            myClass.lessons.reduce((reducer, currentValue) => {
+              return reducer + currentValue.averageOfAttendance;
+            }, 0) / myClass.lessons.length,
+
+          averageOfNonAttendance:
+            myClass.lessons.reduce((reducer, currentValue) => {
+              return reducer + currentValue.averageOfNonAttendance;
+            }, 0) / myClass.lessons.length,
         },
       }
     );

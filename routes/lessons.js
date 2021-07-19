@@ -88,22 +88,22 @@ router.put("/:id/:order", validate(validateAttendance), async (req, res) => {
         myClass.lessons[order - 1].averageOfAttendance =
           myClass.lessons.reduce((reducer, currentValue) => {
             return reducer + currentValue.numOfAttendance;
-          }) / myClass.numOfStudents;
+          }, 0) / myClass.numOfStudents;
 
         myClass.lessons[order - 1].averageOfAttendance =
           myClass.lessons.reduce((reducer, currentValue) => {
             return reducer + currentValue.numOfNonAttendance;
-          }) / myClass.numOfStudents;
+          }, 0) / myClass.numOfStudents;
 
         myClass.averageOfAttendance =
           myClass.lessons.reduce((reducer, currentValue) => {
             return reducer + currentValue.averageOfAttendance;
-          }) / myClass.lessons.length;
+          }, 0) / myClass.lessons.length;
 
         myClass.averageOfNonAttendance =
           myClass.lessons.reduce((reducer, currentValue) => {
             return reducer + currentValue.averageOfNonAttendance;
-          }) / myClass.lessons.length;
+          }, 0) / myClass.lessons.length;
 
         const date = new Date();
         x.status = `${date.getFullYear()}-${
