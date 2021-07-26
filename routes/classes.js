@@ -32,6 +32,12 @@ router.get("/:id", async (req, res) => {
   res.send(classOne);
 });
 
+// api for get lessons of that student
+router.get("/student/:studentId", async (req, res) => {
+  const { studentId } = req.params;
+  let classes = await Classes.find({});
+});
+
 router.post("/", validate(validateClass), async (req, res) => {
   const {
     classTermId,
@@ -177,6 +183,7 @@ router.post("/:id", validate(validateStudentInClass), async (req, res) => {
             _id: myClass._id,
             classTermId: myClass.classTermId,
             name: myClass.name,
+            lecturer: myClass.lecturer,
           },
         },
       }
@@ -235,26 +242,6 @@ router.delete("/:id/:mail", async (req, res) => {
     });
   });
 
-  // myClass.sumOfAttendance = myClass.lessons.reduce((reducer, currentValue) => {
-  //   return reducer + currentValue.numOfAttendance;
-  // });
-
-  // myClass.sumOfNonAttendance = myClass.lessons.reduce(
-  //   (reducer, currentValue) => {
-  //     return reducer + currentValue.numOfNonAttendance;
-  //   }
-  // );
-
-  // myClass.averageOfAttendance =
-  //   myClass.lessons.reduce((reducer, currentValue) => {
-  //     return reducer + currentValue.averageOfAttendance;
-  //   }) / myClass.lessons.length;
-
-  // myClass.averageOfNonAttendance =
-  //   myClass.lessons.reduce((reducer, currentValue) => {
-  //     return reducer + currentValue.averageOfNonAttendance;
-  //   }) / myClass.lessons.length;
-
   try {
     const task = new Fawn.Task();
     task.update(
@@ -312,13 +299,10 @@ router.delete("/:id/:mail", async (req, res) => {
       {
         $pull: {
           classes: {
-            $elemMatch: {
-              classTermId: myClass.classTermId,
-            },
+            _id: myClass._id,
           },
         },
-      },
-      { multi: true }
+      }
     );
     await task.run({ useMongoose: true });
 
@@ -360,6 +344,14 @@ router.put(
         lecturerId: "waiting lecturer registered",
         mail: lecturerMail,
         degree: "waiting lecturer registered",
+      };
+    } else {
+      lecturer = {
+        _id: lecturer._id,
+        name: lecturer.name,
+        lecturerId: lecturer.userId,
+        mail: lecturer.mail,
+        degree: lecturer.degree,
       };
     }
 
@@ -420,6 +412,13 @@ router.put(
           $push: { classes: myClass._id },
         }
       );
+      myClass.lessons[0].students.map((x) => {
+        task.update(
+          "students",
+          { mail: x.mail, "classes._id": myClass._id },
+          { $set: { "classes.$.lecturer": lecturer } }
+        );
+      });
 
       await task.run({ useMongoose: true });
 
@@ -432,15 +431,31 @@ router.put(
 );
 
 router.delete("/:id", validateObjectId, async (req, res) => {
-  const classes = await Classes.findByIdAndDelete(req.params.id);
+  const classes = await Classes.findById(req.params.id);
 
   if (!classes)
-    return res.status(404).send("The Semester with the given ID was not found");
+    return res.status(404).send("The Classes with the given ID was not found");
 
-  res.send("Delete Successfully");
+  try {
+    const task = new Fawn.Task();
+    classes.lessons[0].students.map((x) => {
+      task.update(
+        "students",
+        { mail: x.mail },
+        {
+          $pull: {
+            classes: {
+              _id: classes._id,
+            },
+          },
+        }
+      );
+    });
+    task.remove("classes", { _id: classes._id });
+    await task.run({ useMongoose: true });
+    res.send("Delete Successfully");
+  } catch (error) {}
 });
-
-router.put("/:id");
 
 function generateLessons(numOfWeek) {
   let lessons = [];

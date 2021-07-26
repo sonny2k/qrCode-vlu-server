@@ -14,6 +14,24 @@ const studentSchema = new mongoose.Schema({
           type: String,
         },
         name: String,
+        lecturer: {
+          type: new mongoose.Schema({
+            lecturerId: {
+              type: String,
+            },
+            name: {
+              type: String,
+            },
+            mail: {
+              type: String,
+              required: true,
+              index: true,
+            },
+            degree: {
+              type: String,
+            },
+          }),
+        },
       }),
     },
   ],
@@ -25,6 +43,7 @@ studentSchema.methods.generateAuthToken = function () {
       _id: this._id,
       mail: this.mail,
       name: this.name,
+      studentId: this.studentId,
     },
     config.get("jwtPrivateKey")
   );

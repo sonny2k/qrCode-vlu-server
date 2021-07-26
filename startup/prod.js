@@ -14,7 +14,7 @@ module.exports = function (app) {
   app.use(
     rateLimit({
       windowMs: 1 * 60 * 1000,
-      max: 100,
+      max: 500,
     })
   );
   app.use(compression());

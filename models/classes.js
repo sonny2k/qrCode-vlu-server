@@ -48,21 +48,18 @@ const schemaClass = new mongoose.Schema({
   },
   lessons: [
     {
-      type: new mongoose.Schema(
-        {
-          order: Number,
-          name: String,
-          students: [studentInClassSchema],
-          numOfAttendance: Number,
-          numOfNonAttendance: Number,
-          averageOfAttendance: Number,
-          averageOfNonAttendance: Number,
-          expiredTime: Number,
-          qrCode: String,
-          status: String,
-        },
-        { _id: false }
-      ),
+      type: new mongoose.Schema({
+        order: Number,
+        name: String,
+        students: [studentInClassSchema],
+        numOfAttendance: Number,
+        numOfNonAttendance: Number,
+        averageOfAttendance: Number,
+        averageOfNonAttendance: Number,
+        expiredTime: Number,
+        qrCode: String,
+        status: String,
+      }),
     },
   ],
 });
