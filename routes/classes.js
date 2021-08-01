@@ -185,12 +185,19 @@ router.post("/:id", validate(validateStudentInClass), async (req, res) => {
             name: myClass.name,
             lecturer: myClass.lecturer,
           },
+          history: {
+            _id: mongoose.Types.ObjectId(),
+            time: new Date(),
+            title: "You was added in Class",
+            description: `You was Added in class ${myClass.name} - ${myClass.classTermId}`,
+          },
         },
       }
     );
     await task.run({ useMongoose: true });
     res.send(myClass);
   } catch (error) {
+    console.log(error);
     res.status(500).send("Something failed");
   }
 });
@@ -302,6 +309,14 @@ router.delete("/:id/:mail", async (req, res) => {
             _id: myClass._id,
           },
         },
+        $push: {
+          history: {
+            _id: mongoose.Types.ObjectId(),
+            time: new Date(),
+            title: "You was removed",
+            description: `You was removed in class ${myClass.name} - ${myClass.classTermId}`,
+          },
+        },
       }
     );
     await task.run({ useMongoose: true });
@@ -357,20 +372,6 @@ router.put(
 
     const semester = await Semesters.findOne({ _id: semesterId });
     if (!semester) return res.status(400).send("Invalid semester Id");
-
-    // myClass.classTermId = classTermId;
-    // myClass.name = name;
-    // myClass.numOfCredits = numOfCredits;
-    // myClass.courseType = courseType;
-    // myClass.schoolYear = schoolYear;
-    // myClass.startDate = startDate;
-    // myClass.endDate = endDate;
-    // myClass.room = room;
-    // myClass.numOfWeek = numOfWeek;
-    // myClass.dayOfWeek = dayOfWeek;
-    // myClass.session = session;
-    // myClass.semesterId = semester;
-    // myClass.lecturer = lecturer;
 
     try {
       const task = new Fawn.Task();
@@ -472,6 +473,7 @@ function generateLessons(numOfWeek) {
       expiredTime: null,
       qrCode: null,
       status: "Availability",
+      devicesId: [],
     });
   }
 

@@ -38,6 +38,7 @@ router.post("/", validate(validateStudent), async (req, res) => {
     name,
     mail,
     classes,
+    history: [],
   });
 
   try {

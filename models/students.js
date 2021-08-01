@@ -3,6 +3,15 @@ const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 
+const historySchema = new mongoose.Schema(
+  {
+    time: Date,
+    title: String,
+    description: String,
+  },
+  { index: true }
+);
+
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
@@ -35,6 +44,8 @@ const studentSchema = new mongoose.Schema({
       }),
     },
   ],
+  history: [historySchema],
+  isSeenHistory: Boolean,
 });
 
 studentSchema.methods.generateAuthToken = function () {
