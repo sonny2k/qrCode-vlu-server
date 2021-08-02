@@ -19,12 +19,17 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", validate(validateSemester), async (req, res) => {
+  var io = req.app.get("socketIo");
+
   let semester = await Semesters.findOne({ symbol: req.body.symbol });
   if (semester) return res.status(400).send("Symbol Semester already exists");
 
   semester = new Semesters(_.pick(req.body, ["name", "year", "symbol"]));
 
   await semester.save();
+
+  const semesters = await Semesters.find();
+  io.emit("getNewSemesters", semesters);
   res.send(semester);
 });
 
@@ -34,6 +39,8 @@ router.put(
   async (req, res) => {
     let semester = await Semesters.findOne({ symbol: req.body.symbol });
     if (semester) return res.status(400).send("Symbol Semester already exists");
+
+    var io = req.app.get("socketIo");
 
     semester = await Semesters.findByIdAndUpdate(
       req.params.id,
@@ -48,12 +55,18 @@ router.put(
         .status(404)
         .send("The Semester with th given Id was not found");
 
+    const semesters = await Semesters.find();
+    io.emit("getNewSemesters", semesters);
+
     res.send(semester);
   }
 );
 
 router.delete("/:id", validateObjectId, async (req, res) => {
   const classes = await Classes.findOne({ "semester._id": req.params.id });
+
+  var io = req.app.get("socketIo");
+
   if (classes) {
     return res
       .status(400)
@@ -66,6 +79,9 @@ router.delete("/:id", validateObjectId, async (req, res) => {
 
   if (!semester)
     return res.status(404).send("The Semester with the given ID was not found");
+
+  const semesters = await Semesters.find();
+  io.emit("deleteSemester", semesters);
 
   res.send("Delete successfully");
 });

@@ -28,6 +28,8 @@ router.get("/me", auth, async (req, res) => {
 router.post("/", validate(validateUser), async (req, res, next) => {
   const { mail, name, userId, degree, facultyId, roleId } = req.body;
 
+  var io = req.app.get("socketIo");
+
   let user = await Users.findOne({ mail });
   if (user) return res.status(400).send("User already registered");
 
@@ -81,10 +83,13 @@ router.post("/", validate(validateUser), async (req, res, next) => {
         }
       );
     });
-    task.run().then(() => {
-      const token = user.generateAuthToken();
-      res.header("x-auth-token", token).send(user);
-    });
+    await task.run({ useMongoose: true });
+
+    const users = await Users.find();
+    io.emit("getNewUsers", users);
+
+    const token = user.generateAuthToken();
+    res.header("x-auth-token", token).send(user);
   } catch (error) {
     res.status(500).send("Something failed on server");
   }
@@ -96,6 +101,8 @@ router.put(
   async (req, res) => {
     const { id } = req.params;
     const { userId, name, mail, degree, facultyId, roleId } = req.body;
+
+    var io = req.app.get("socketIo");
 
     const faculty = await Faculties.findById(facultyId);
     if (!faculty) return res.status(400).send("Invalid Id faculty");
@@ -140,7 +147,9 @@ router.put(
       await task.run();
 
       user = await Users.findOne({ mail });
-      console.log(user);
+
+      const users = await Users.find();
+      io.emit("getNewUsers", users);
       res.send(user);
     } catch (error) {
       res.status(500).send("Something failed on server");
@@ -150,6 +159,8 @@ router.put(
 
 router.delete("/:id", validateObjectId, async (req, res) => {
   const { id } = req.params;
+
+  var io = req.app.get("socketIo");
 
   const user = await Users.findById(id);
   if (!user)
@@ -163,6 +174,9 @@ router.delete("/:id", validateObjectId, async (req, res) => {
       );
 
   await Users.deleteOne({ _id: user._id });
+
+  const users = await Users.find();
+  io.emit("deleteUser", users);
 
   res.send("Delete Successfully");
 });

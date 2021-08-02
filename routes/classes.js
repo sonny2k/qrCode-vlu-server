@@ -24,6 +24,7 @@ router.get("/", auth, async (req, res) => {
   } else {
     classes = await Classes.find();
   }
+
   res.send(classes);
 });
 
@@ -54,6 +55,8 @@ router.post("/", validate(validateClass), async (req, res) => {
     semesterId,
     lecturerMail,
   } = req.body;
+
+  var io = req.app.get("socketIo");
 
   let myClass = await Classes.findOne({ classTermId });
   if (myClass) return res.status(400).send("Class Term Id was exist");
@@ -119,8 +122,18 @@ router.post("/", validate(validateClass), async (req, res) => {
       }
     );
     await task.run({ useMongoose: true });
+
+    const classes = await Classes.find();
+
+    // io.on("connection", (socket) => {
+    //   console.log("hello ", socket.id);
+    // });
+
+    io.emit("getNewClasses", classes);
+
     res.send(myClass);
   } catch (error) {
+    console.log(error);
     res.status(500).send("Something failed on server");
   }
 });
@@ -128,6 +141,8 @@ router.post("/", validate(validateClass), async (req, res) => {
 router.post("/:id", validate(validateStudentInClass), async (req, res) => {
   const { id } = req.params;
   const { mail } = req.body;
+
+  var io = req.app.get("socketIo");
 
   let myClass = await Classes.findById(id);
   if (!myClass) return res.status(400).send("Given class id not found");
@@ -195,9 +210,10 @@ router.post("/:id", validate(validateStudentInClass), async (req, res) => {
       }
     );
     await task.run({ useMongoose: true });
+
+    io.emit("newStudent", myClass);
     res.send(myClass);
   } catch (error) {
-    console.log(error);
     res.status(500).send("Something failed");
   }
 });
@@ -207,27 +223,35 @@ router.put(
   [validateObjectId, validate(validateStudentInClass)],
   async (req, res) => {
     const { id, mail } = req.params;
-    const { status } = req.body;
+    const student = req.body;
 
-    if (!status) return res.status(400).send("Status is required");
+    var io = req.app.get("socketIo");
 
     let myClass = await Classes.findById(id);
     if (!myClass) return res.status(400).send("Given input not found");
 
-    const student = myClass.lessons[0].students.find((x) => x?.mail === mail);
-    if (!student) return res.status(400).send("Student not found in Class");
+    const isExist = myClass.lessons[0].students.find((x) => x?.mail === mail);
+    if (!isExist) return res.status(400).send("Student not found in Class");
 
-    myClass.lessons[orderLesson - 1].students.find(
-      (x) => x.mail === mail
-    ).status = status;
+    myClass.lessons.map((x) => {
+      x.students.find((y) => {
+        if (y.mail === mail) {
+          y.name = student.name;
+          y.studentId = student.studentId;
+        }
+      });
+    });
     await myClass.save();
 
+    io.emit("newStudent", myClass);
     res.send(myClass);
   }
 );
 
 router.delete("/:id/:mail", async (req, res) => {
   const { id, mail } = req.params;
+
+  var io = req.app.get("socketIo");
 
   let myClass = await Classes.findById(id);
   if (!myClass) return res.status(400).send("Given input not found");
@@ -322,6 +346,7 @@ router.delete("/:id/:mail", async (req, res) => {
     await task.run({ useMongoose: true });
 
     const newdata = await Classes.findById(id);
+    io.emit("newStudent", newdata);
     res.send(newdata);
   } catch (error) {
     res.status(500).send("Something failed on server");
@@ -348,6 +373,8 @@ router.put(
       semesterId,
       lecturerMail,
     } = req.body;
+
+    var io = req.app.get("socketIo");
 
     let myClass = await Classes.findById(id);
     if (!myClass) return res.status(400).send("Invalid class id");
@@ -424,6 +451,9 @@ router.put(
       await task.run({ useMongoose: true });
 
       myClass = await Classes.findById(id);
+
+      const classes = await Classes.find();
+      io.emit("getNewClasses", classes);
       res.send(myClass);
     } catch (error) {
       res.status(500).send("Something failed on server");
@@ -433,6 +463,7 @@ router.put(
 
 router.delete("/:id", validateObjectId, async (req, res) => {
   const classes = await Classes.findById(req.params.id);
+  var io = req.app.get("socketIo");
 
   if (!classes)
     return res.status(404).send("The Classes with the given ID was not found");
@@ -454,8 +485,13 @@ router.delete("/:id", validateObjectId, async (req, res) => {
     });
     task.remove("classes", { _id: classes._id });
     await task.run({ useMongoose: true });
+    const newClasses = await Classes.find();
+    io.emit("deleteClasses", newClasses);
     res.send("Delete Successfully");
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Something failed to server");
+  }
 });
 
 function generateLessons(numOfWeek) {

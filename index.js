@@ -11,7 +11,9 @@ const io = require("socket.io")(httpServer, {
   },
 });
 
-app.set("socketio", io);
+app.set("socketIo", io);
+// app.set("socketIoClasses", io.of("/api/classes"));
+// app.set("socketIoUsers", io.of("/api/users"));
 
 require("./startup/logging")();
 require("./startup/prod")(app);
@@ -20,10 +22,6 @@ require("./startup/db")();
 require("./startup/routes")(app);
 
 const port = process.env.PORT || 3900;
-
-io.on("connection", (socket) => {
-  console.log("hello ", socket.id);
-});
 
 const server = httpServer.listen(port, () => {
   console.log(`Listening on Port ${port}...`);
