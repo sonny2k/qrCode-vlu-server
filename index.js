@@ -7,13 +7,12 @@ const httpServer = require("http").createServer(app);
 
 const io = require("socket.io")(httpServer, {
   cors: {
-    origin: ["https://vlu-qrcode-client.herokuapp.com"],
+    // origin: ["https://vlu-qrcode-client.herokuapp.com"],
+    origin: ["http://localhost:3000"],
   },
 });
 
 app.set("socketIo", io);
-// app.set("socketIoClasses", io.of("/api/classes"));
-// app.set("socketIoUsers", io.of("/api/users"));
 
 require("./startup/logging")();
 require("./startup/prod")(app);

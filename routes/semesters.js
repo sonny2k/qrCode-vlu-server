@@ -1,6 +1,8 @@
 const express = require("express");
 const _ = require("lodash");
 
+const auth = require("../middleware/auth");
+const moment = require("moment");
 const { Semesters, validateSemester } = require("../models/semesters");
 const validate = require("../middleware/validate");
 const validateObjectId = require("../middleware/validateObjectId");
@@ -18,13 +20,19 @@ router.get("/:id", async (req, res) => {
   res.send(semester);
 });
 
-router.post("/", validate(validateSemester), async (req, res) => {
+router.post("/", [validate(validateSemester), auth], async (req, res) => {
   var io = req.app.get("socketIo");
+
+  const editor = req.user;
 
   let semester = await Semesters.findOne({ symbol: req.body.symbol });
   if (semester) return res.status(400).send("Symbol Semester already exists");
 
-  semester = new Semesters(_.pick(req.body, ["name", "year", "symbol"]));
+  semester = new Semesters({
+    ..._.pick(req.body, ["name", "year", "symbol"]),
+    editor: `${editor.mail} (${editor.role})`,
+    lastUpdated: moment().locale("vi").format("L LTS"),
+  });
 
   await semester.save();
 
@@ -35,10 +43,11 @@ router.post("/", validate(validateSemester), async (req, res) => {
 
 router.put(
   "/:id",
-  [validateObjectId, validate(validateSemester)],
+  [validateObjectId, validate(validateSemester), auth],
   async (req, res) => {
+    const editor = req.user;
+
     let semester = await Semesters.findOne({ symbol: req.body.symbol });
-    if (semester) return res.status(400).send("Symbol Semester already exists");
 
     var io = req.app.get("socketIo");
 
@@ -46,6 +55,8 @@ router.put(
       req.params.id,
       {
         ..._.pick(req.body, ["name", "year", "symbol"]),
+        editor: `${editor.mail} (${editor.role})`,
+        lastUpdated: moment().locale("vi").format("L LTS"),
       },
       { new: true }
     );

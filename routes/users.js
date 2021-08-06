@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Fawn = require("../utils/transaction");
 const _ = require("lodash");
 
+const moment = require("moment");
 const { Users, validateUser } = require("../models/users");
 const validate = require("../middleware/validate");
 const validateObjectId = require("../middleware/validateObjectId");
@@ -25,10 +26,12 @@ router.get("/me", auth, async (req, res) => {
   res.send(users);
 });
 
-router.post("/", validate(validateUser), async (req, res, next) => {
+router.post("/", [validate(validateUser), auth], async (req, res, next) => {
   const { mail, name, userId, degree, facultyId, roleId } = req.body;
 
   var io = req.app.get("socketIo");
+
+  const editor = req.user;
 
   let user = await Users.findOne({ mail });
   if (user) return res.status(400).send("User already registered");
@@ -62,6 +65,8 @@ router.post("/", validate(validateUser), async (req, res, next) => {
       name: role.name,
     },
     classes: classes?.map((x) => x._id),
+    editor: `${editor.mail} (${editor.role})`,
+    lastUpdated: moment().locale("vi").format("L LTS"),
   });
 
   try {
@@ -97,10 +102,12 @@ router.post("/", validate(validateUser), async (req, res, next) => {
 
 router.put(
   "/:id",
-  [validateObjectId, validate(validateUser)],
+  [validateObjectId, validate(validateUser), auth],
   async (req, res) => {
     const { id } = req.params;
     const { userId, name, mail, degree, facultyId, roleId } = req.body;
+
+    const editor = req.user;
 
     var io = req.app.get("socketIo");
 
@@ -127,6 +134,8 @@ router.put(
             degree,
             faculty,
             role,
+            editor: `${editor.mail} (${editor.role})`,
+            lastUpdated: moment().locale("vi").format("L LTS"),
           },
         }
       );
@@ -145,13 +154,17 @@ router.put(
         }
       );
       await task.run();
-
       user = await Users.findOne({ mail });
 
       const users = await Users.find();
       io.emit("getNewUsers", users);
+
+      const token = user.generateAuthToken();
+      io.emit("updateToken", id, token);
+
       res.send(user);
     } catch (error) {
+      console.log(error);
       res.status(500).send("Something failed on server");
     }
   }
@@ -177,6 +190,7 @@ router.delete("/:id", validateObjectId, async (req, res) => {
 
   const users = await Users.find();
   io.emit("deleteUser", users);
+  io.emit("deleteToken", id);
 
   res.send("Delete Successfully");
 });
