@@ -19,9 +19,9 @@ const { Students } = require("../models/students");
 
 const router = express.Router();
 
-router.get("/", auth, async (req, res) => {
+router.get("/", async (req, res) => {
   let classes = null;
-  if (req.user.role === "lecturer") {
+  if (req.user?.role === "lecturer") {
     classes = await Classes.find({ "lecturer.mail": req.user.mail });
   } else {
     classes = await Classes.find();
