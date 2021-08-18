@@ -59,7 +59,6 @@ router.put("/:id/:order", validate(validateAttendance), async (req, res) => {
   const { id, order } = req.params;
 
   var io = req.app.get("socketIo");
-  console.log(io);
 
   let myClass = await Classes.findById(id);
   if (!myClass) return res.status(400).send("Id class not exist in system");
@@ -70,14 +69,13 @@ router.put("/:id/:order", validate(validateAttendance), async (req, res) => {
 
   const result = myClass.lessons[order - 1].students.find((x) => {
     if (x.mail === mail) {
-      const currentStatus = new Date(x.status);
-      if (currentStatus == "Invalid Date") {
+      if (!moment(x.status, "DD/MM/YYYY HH:mm:ss", true).isValid()) {
         myClass.lessons[order - 1].numOfAttendance++;
         myClass.lessons[order - 1].numOfNonAttendance--;
         myClass.sumOfAttendance++;
         myClass.sumOfNonAttendance--;
 
-        x.status = moment().format("DD/MM/YYYY HH:mm");
+        x.status = moment().locale("vi").format("L LTS");
       } else {
         myClass.lessons[order - 1].numOfAttendance--;
         myClass.lessons[order - 1].numOfNonAttendance++;
@@ -175,8 +173,7 @@ router.put(
 
     const result = myClass.lessons[order - 1].students.find((x) => {
       if (x.mail === mail) {
-        const currentStatus = new Date(x.status);
-        if (currentStatus == "Invalid Date") {
+        if (!moment(x.status, "DD/MM/YYYY HH:mm:ss", true).isValid) {
           if (myClass.lessons[order - 1].devicesId.includes(deviceId)) {
             return res
               .status(400)
@@ -208,7 +205,7 @@ router.put(
               return reducer + currentValue.averageOfNonAttendance;
             }, 0) / myClass.lessons.length;
 
-          x.status = moment().format("DD/MM/YYYY HH:mm");
+          x.status = moment().locale("vi").format("L LTS");
           x.deviceId = deviceId;
           myClass.lessons[order - 1].devicesId.push(deviceId);
         } else {

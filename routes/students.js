@@ -99,7 +99,12 @@ router.put(
         .status(404)
         .send("The Student with given ID was not found in DB");
 
-    res.send(student);
+    res.send({
+      _id: student._id,
+      mail: student.mail,
+      name: student.name,
+      studentId: student.studentId,
+    });
   }
 );
 

@@ -171,17 +171,17 @@ router.post(
       };
     }
 
-    myClass.lessons.forEach((x) => {
-      x.students.push({
-        mail,
-        name: student["name"],
-        studentId: student["studentId"],
-        status: "Not Attended",
-      });
-      x.numOfNonAttendance++;
-      x.averageOfAttendance = x.numOfAttendance / x.students.length;
-      x.averageOfNonAttendance = x.numOfNonAttendance / x.students.length;
-    });
+    // await Promise.all(
+    //   myClass.lessons.map((x) => {
+    //     x.students.push({
+    //       mail,
+    //       name: student["name"],
+    //       studentId: student["studentId"],
+    //       status: "Not Attended",
+    //     });
+    //     x.numOfNonAttendance++;
+    //   })
+    // );
 
     try {
       const task = new Fawn.Task();
@@ -190,13 +190,21 @@ router.post(
         { _id: myClass?._id },
         {
           $set: {
-            lessons: myClass.lessons,
             editor: `${editor.mail} (${editor.role})`,
             lastUpdated: moment().locale("vi").format("L LTS"),
           },
           $inc: {
             numOfStudents: 1,
             sumOfNonAttendance: myClass.lessons.length,
+            "lessons.$[].numOfNonAttendance": 1,
+          },
+          $push: {
+            "lessons.$[].students": {
+              mail,
+              name: student["name"],
+              studentId: student["studentId"],
+              status: "Not Attended",
+            },
           },
         }
       );
@@ -223,10 +231,12 @@ router.post(
       await task.run({ useMongoose: true });
 
       const newClasses = await Classes.find();
+      myClass = await Classes.findById(id);
       io.emit("getNewClasses", newClasses);
       io.emit("newStudent", myClass);
       res.send("Successfully");
     } catch (error) {
+      console.log(error);
       res.status(500).send("Something failed");
     }
   }
@@ -502,21 +512,23 @@ router.delete("/:id", validateObjectId, async (req, res) => {
 
   try {
     const task = new Fawn.Task();
-    classes.lessons[0].students.map((x) => {
-      task.update(
-        "students",
-        { mail: x.mail },
-        {
-          $pull: {
-            classes: {
-              _id: classes._id,
+    await Promise.all(
+      classes.lessons[0].students.map(async (x) => {
+        await task.update(
+          "students",
+          { mail: x.mail },
+          {
+            $pull: {
+              classes: {
+                _id: classes._id,
+              },
             },
-          },
-        }
-      );
-    });
+          }
+        );
+      })
+    );
     task.remove("classes", { _id: classes._id });
-    await task.run({ useMongoose: true });
+    task.run({ useMongoose: true });
     const newClasses = await Classes.find();
     io.emit("deleteClasses", newClasses);
     res.send("Delete Successfully");
