@@ -528,7 +528,7 @@ router.delete("/:id", validateObjectId, async (req, res) => {
       })
     );
     task.remove("classes", { _id: classes._id });
-    task.run({ useMongoose: true });
+    await task.run({ useMongoose: true });
     const newClasses = await Classes.find();
     io.emit("deleteClasses", newClasses);
     res.send("Delete Successfully");
