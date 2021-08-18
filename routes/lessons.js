@@ -173,7 +173,8 @@ router.put(
 
     const result = myClass.lessons[order - 1].students.find((x) => {
       if (x.mail === mail) {
-        if (!moment(x.status, "DD/MM/YYYY HH:mm:ss", true).isValid) {
+        console.log(x.status);
+        if (!moment(x.status, "DD/MM/YYYY HH:mm:ss", true).isValid()) {
           if (myClass.lessons[order - 1].devicesId.includes(deviceId)) {
             return res
               .status(400)
